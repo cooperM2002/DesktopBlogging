@@ -5,7 +5,7 @@ from blogging.gui.blog_dialogue import BlogEditDialog
 
 def get_selected_blog(gui):
     """
-        #return blog obj for currently selected row, or none
+        return blog obj for currently selected row, or none
 
     """
     #get selection model from table
@@ -23,7 +23,7 @@ def get_selected_blog(gui):
 
 def handle_edit_blog_clicked(gui):
     """
-        #edit currently selected blog
+        edit currently selected blog
 
     """
 
@@ -660,5 +660,79 @@ def handle_list_posts_clicked(gui):
 
     gui.posts_text.setPlainText("\n".join(lines))
 
+def handle_search_post_clicked(gui):
+    """
+    Search posts by keyword within the currently selected blog,
+    and display matches in the QPlainTextEdit.
+    """
 
+    # must be logged in
+    if not gui.controller.is_logged_in:
+        QMessageBox.warning(gui, "SEARCH POSTS", "You must be logged in first.")
+        return
+
+    # must have selected blog
+    blog_id = getattr(gui, "selected_blog_id", None)
+    if blog_id is None:
+        QMessageBox.warning(gui, "SEARCH POSTS", "Please select a blog first.")
+        return
+
+    term = gui.post_search_edit.text().strip()
+
+    # If empty, just show all posts (nice UX, and avoids “why nothing happened”)
+    if not term:
+        refresh_posts(gui)
+        gui.statusBar().showMessage("Showing all posts (no search term).")
+        return
+
+    try:
+        # temporarily set current blog for controller.retrieve_posts
+        gui.controller.set_current_blog(blog_id)
+        posts = gui.controller.retrieve_posts(term)
+    except Exception as ex:
+        QMessageBox.warning(gui, "SEARCH POSTS", f"Error searching posts:\n{ex}")
+        return
+    finally:
+        # important: don’t leave current_blog set, or delete_blog can be blocked
+        try:
+            gui.controller.unset_current_blog()
+        except Exception:
+            pass
+
+    gui.posts_text.clear()
+
+    if not posts:
+        gui.posts_text.setPlainText(f"No posts found for '{term}'.")
+        gui.statusBar().showMessage(f"0 posts found for '{term}'")
+        return
+
+    # Sort newest-first by code (matches your list_posts display style)
+    posts = sorted(posts, key=lambda p: p.code, reverse=True)
+
+    lines = []
+    for post in posts:
+        header = f"#{post.code} - {post.title}"
+        if getattr(post, "author", None):
+            header += f" (by {post.author})"
+        lines.append(header)
+
+        created = getattr(post, "created_at", None) or getattr(post, "creation_time", None)
+        if created:
+            lines.append(f"Created: {created}")
+
+        lines.append("-" * 45)
+        lines.append(post.text)
+        lines.append("-" * 20)
+        lines.append("")
+
+    gui.posts_text.setPlainText("\n".join(lines))
+    gui.statusBar().showMessage(f"{len(posts)} posts found for '{term}'")
+
+
+def handle_clear_post_search_clicked(gui):
+    """Clear the post search box and show all posts again."""
+    if hasattr(gui, "post_search_edit"):
+        gui.post_search_edit.clear()
+    refresh_posts(gui)
+    gui.statusBar().showMessage("Post search cleared.")
 

@@ -99,6 +99,14 @@ class BloggingGUI(QMainWindow):
         """refresh, lists all posts for current blog"""
         h.refresh_posts(self)
 
+    def handle_search_post_clicked(self):
+        """search posts by keyword in selected blog"""
+        h.handle_search_post_clicked(self)
+
+    def handle_clear_post_search_clicked(self):
+        """clear post search and show all posts again"""
+        h.handle_clear_post_search_clicked(self)
+
 
     ##############
     ##   init   ##
@@ -269,6 +277,20 @@ class BloggingGUI(QMainWindow):
 
         posts_column.addLayout(posts_header_row)
 
+        # search row for posts
+        post_search_row = QHBoxLayout()
+
+        self.post_search_edit = QLineEdit()
+        self.post_search_edit.setPlaceholderText("Search posts by keyword (title/text/author).")
+        self.button_search_post = QPushButton("Search")
+        self.button_clear_post_search = QPushButton("Clear")
+
+        post_search_row.addWidget(self.post_search_edit)
+        post_search_row.addWidget(self.button_search_post)
+        post_search_row.addWidget(self.button_clear_post_search)
+        posts_column.addLayout(post_search_row)
+
+
         #posts text area
         self.posts_text = QPlainTextEdit()
         self.posts_text.setReadOnly(True)
@@ -308,7 +330,8 @@ class BloggingGUI(QMainWindow):
         self.button_edit_post.clicked.connect(self.handle_edit_post_clicked)
         self.button_delete_post.clicked.connect(self.handle_delete_post_clicked)
         self.button_list_posts.clicked.connect(self.handle_list_posts_clicked)
-
+        self.button_search_post.clicked.connect(self.handle_search_post_clicked)
+        self.button_clear_post_search.clicked.connect(self.handle_clear_post_search_clicked)
 
 def main():
     
